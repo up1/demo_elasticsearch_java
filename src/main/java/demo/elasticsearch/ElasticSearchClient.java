@@ -9,6 +9,7 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.search.SearchType;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.ImmutableSettings;
@@ -16,6 +17,8 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.node.Node;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
 
 public class ElasticSearchClient {
 	
@@ -25,7 +28,7 @@ public class ElasticSearchClient {
 		addDocument();
 		getProductById();
 		searchProduct();
-		deleteProductById();
+//		deleteProductById();
 	}
 	
 	private static Client getClusterClient() {
@@ -49,8 +52,8 @@ public class ElasticSearchClient {
 		IndexResponse response = client.prepareIndex(INDEX, "products", "1")
 		        .setSource(jsonBuilder()
 		                    .startObject()
-		                        .field("product_name", "kimchy")
-		                        .field("product_description", "trying out Elastic Search")
+		                        .field("product_name", "Bag")
+		                        .field("product_description", "Big Bag")
 		                        .field("product_price", "500.00")
 		                        .field("create_date", new Date())		                        
 		                    .endObject()
@@ -77,19 +80,20 @@ public class ElasticSearchClient {
 		Client client = getClusterClient();
 		SearchResponse response = client.prepareSearch(INDEX)
 		        .setTypes("products")
-		        .setQuery(QueryBuilders.termQuery("multi", "kimchy"))             // Query
+		        .setSearchType(SearchType.DFS_QUERY_THEN_FETCH)
+		        .setQuery(QueryBuilders.matchQuery("product_name", "Bag"))
 		        .setFrom(0).setSize(60).setExplain(true)
 		        .execute()
 		        .actionGet();
 		
-//		SearchHits searchHits = response.getHits();
-//		System.out.println(searchHits.getTotalHits());
-//		for (SearchHit searchHit : searchHits) {
-//			System.out.println("Document ID = " +searchHit.getId());
-//			System.out.println( "Product Name = " + searchHit.getSource().get("product_name") );
-//			System.out.println( "Product Description = " + searchHit.getSource().get("product_description") );
-//			System.out.println( "Product Price = " + searchHit.getSource().get("product_price") );
-//		}
+		System.out.println( "# Hit = " + response.getHits().getTotalHits() );
+		SearchHits searchHits = response.getHits();
+		for (SearchHit searchHit : searchHits) {
+			System.out.println("Document ID = " +searchHit.getId());
+			System.out.println( "Product Name = " + searchHit.getSource().get("product_name") );
+			System.out.println( "Product Description = " + searchHit.getSource().get("product_description") );
+			System.out.println( "Product Price = " + searchHit.getSource().get("product_price") );
+		}
 		} catch(Exception e) {
 			e.printStackTrace();
 		}
